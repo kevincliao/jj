@@ -79,7 +79,9 @@
 "diff file_header" = { bold = true }
 "diff hunk_header" = "cyan"
 "diff removed" = "red"
+"diff removed whitespace" = { bg = "red" }
 "diff added" = "green"
+"diff added whitespace" = { bg = "green" }
 "diff modified" = "cyan"
 "diff access-denied" = { bg = "red" }
 
