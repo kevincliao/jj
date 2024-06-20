@@ -163,7 +163,7 @@ pub fn get_current_head_ops(
     op_heads_store: &dyn OpHeadsStore,
 ) -> OpStoreResult<Vec<Operation>> {
     op_heads_store
-        .get_op_heads()
+        .get_op_heads()?
         .into_iter()
         .map(|id| -> OpStoreResult<Operation> {
             let data = op_store.read_operation(&id)?;

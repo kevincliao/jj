@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 
 use crate::lock::FileLock;
 use crate::object_id::ObjectId;
-use crate::op_heads_store::{OpHeadsStore, OpHeadsStoreLock};
+use crate::op_heads_store::{OpHeadsStore, OpHeadsStoreLock, OpHeadStoreResult};
 use crate::op_store::OperationId;
 
 pub struct SimpleOpHeadsStore {
@@ -88,7 +88,7 @@ impl OpHeadsStore for SimpleOpHeadsStore {
         }
     }
 
-    fn get_op_heads(&self) -> Vec<OperationId> {
+    fn get_op_heads(&self) -> OpHeadStoreResult<Vec<OperationId>> {
         let mut op_heads = vec![];
         for op_head_entry in std::fs::read_dir(&self.dir).unwrap() {
             let op_head_file_name = op_head_entry.unwrap().file_name();
@@ -97,7 +97,7 @@ impl OpHeadsStore for SimpleOpHeadsStore {
                 op_heads.push(OperationId::new(op_head));
             }
         }
-        op_heads
+        Ok(op_heads)
     }
 
     fn lock(&self) -> Box<dyn OpHeadsStoreLock + '_> {

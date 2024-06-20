@@ -32,6 +32,12 @@ pub enum OpHeadResolutionError {
     NoHeads,
 }
 
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub struct OpHeadStoreError(pub Box<dyn std::error::Error + Send + Sync>);
+
+pub type OpHeadStoreResult<T> = Result<T, OpHeadStoreError>;
+
 pub trait OpHeadsStoreLock {}
 
 /// Manages the set of current heads of the operation log.
@@ -45,7 +51,7 @@ pub trait OpHeadsStore: Send + Sync + Debug {
     /// The old op heads must not contain the new one.
     fn update_op_heads(&self, old_ids: &[OperationId], new_id: &OperationId);
 
-    fn get_op_heads(&self) -> Vec<OperationId>;
+    fn get_op_heads(&self) -> OpHeadStoreResult<Vec<OperationId>>;
 
     /// Optionally takes a lock on the op heads store. The purpose of the lock
     /// is to prevent concurrent processes from resolving the same divergent
@@ -64,9 +70,9 @@ pub fn resolve_op_heads<E>(
     resolver: impl FnOnce(Vec<Operation>) -> Result<Operation, E>,
 ) -> Result<Operation, E>
 where
-    E: From<OpHeadResolutionError> + From<OpStoreError>,
+    E: From<OpHeadResolutionError> + From<OpStoreError> + From<OpHeadStoreError>,
 {
-    let mut op_heads = op_heads_store.get_op_heads();
+    let mut op_heads = op_heads_store.get_op_heads()?;
 
     // TODO: De-duplicate this 'simple-resolution' code.
     if op_heads.is_empty() {
@@ -88,7 +94,7 @@ where
     // only to prevent other concurrent processes from doing the same work (and
     // producing another set of divergent heads).
     let _lock = op_heads_store.lock();
-    let op_head_ids = op_heads_store.get_op_heads();
+    let op_head_ids = op_heads_store.get_op_heads()?;
 
     if op_head_ids.is_empty() {
         return Err(OpHeadResolutionError::NoHeads.into());
